@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using Unity.Sentis;
 using System.IO;
 using Unity.MLAgents;
@@ -300,11 +302,35 @@ namespace Unity.MLAgentsExamples
             return asset;
         }
 
-        ModelAsset LoadSentisModel(byte[] rawModel)
+            ModelAsset LoadSentisModel(byte[] rawModel)
         {
+            
             var asset = ScriptableObject.CreateInstance<ModelAsset>();
-            asset.modelAssetData = ScriptableObject.CreateInstance<ModelAssetData>();
-            asset.modelAssetData.value = rawModel;
+           
+            var modelAssetDataType = typeof(ModelAsset).Assembly.GetType("NamespaceOfModelAssetData.ModelAssetData"); 
+            var modelAssetDataInstance = ScriptableObject.CreateInstance(modelAssetDataType);
+     
+            FieldInfo modelAssetDataField = typeof(ModelAsset).GetField("modelAssetData", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (modelAssetDataField != null)
+            {
+                modelAssetDataField.SetValue(asset, modelAssetDataInstance);
+
+                FieldInfo valueField = modelAssetDataType.GetField("value", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (valueField != null)
+                {
+                    valueField.SetValue(modelAssetDataInstance, rawModel);
+                }
+                else
+                {
+                    Debug.LogError("Failed to retrieve the value field from ModelAssetData.");
+                }
+            }
+            else
+            {
+                Debug.LogError("Failed to retrieve modelAssetData field from ModelAsset using reflection.");
+            }
+
             return asset;
         }
 
