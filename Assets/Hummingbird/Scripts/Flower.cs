@@ -19,10 +19,10 @@ public class Flower : MonoBehaviour
     [HideInInspector]
     public Collider nectarCollider;
 
-    //The solid collider for representing the flower petals
+    // The solid collider for representing the flower petals
     private Collider FlowerCollider;
 
-    //The flower's material
+    // The flower's material
     private Material FlowerMaterial;
 
     /// <summary>
@@ -65,22 +65,22 @@ public class Flower : MonoBehaviour
     /// <returns>The actual amount successfully removed</returns>
     public float Feed(float amount) 
     {
-        //Tracks how much nectar was successfully taken (cannot take more than is available)
+        // Tracks how much nectar was successfully taken (cannot take more than is available)
         float nectarTaken = Math.Clamp(amount, 0f, NectarAmount);
         
-        //Subtract the nectar
+        // Subtract the nectar
         NectarAmount -= nectarTaken;
 
         if(NectarAmount <= 0) 
         {
-            //There is no nectar remaining
+            // There is no nectar remaining
             NectarAmount = 0;
 
-            //Disable the flower and nectar collider
+            // Disable the flower and nectar collider
             FlowerCollider.gameObject.SetActive(false);
             nectarCollider.gameObject.SetActive(false);
 
-            //Change the flower color to show it's empty
+            // Change the flower color to show it's empty
             FlowerMaterial.SetColor("_BaseColor", emptyNectarColor);
         }
         return nectarTaken;
@@ -90,12 +90,12 @@ public class Flower : MonoBehaviour
     /// </summary>
     public void ResetFlower()
     {
-        //Refill
+        // Refill
         NectarAmount = 1f;
-        //Enable Colliders
+        // Enable Colliders
         FlowerCollider.gameObject.SetActive(true);
         nectarCollider.gameObject.SetActive(true);
-        //Set flower color to show it's full
+        // Set flower color to show it's full
         FlowerMaterial.SetColor("_BaseColor", fullNectarColor);
     }
     /// <summary>
@@ -103,11 +103,11 @@ public class Flower : MonoBehaviour
     /// </summary>
     public void Awake()
     {
-        //Find the mesh renderer and get it's main material
+        // Find the mesh renderer and get it's main material
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         FlowerMaterial = meshRenderer.material;
 
-        //Find flower and nectar collider
+        // Find flower and nectar collider
         FlowerCollider = transform.Find("FlowerCollider").GetComponent<Collider>();
         nectarCollider = transform.Find("FlowerNectarCollider").GetComponent<Collider>();
     }
