@@ -36,7 +36,7 @@ public class Flower : MonoBehaviour
     }
 
     /// <summary>
-    /// The center poistion of the flower
+    /// The center position of the flower
     /// </summary>
     public Vector3 FlowerCenterPosition {
         get
