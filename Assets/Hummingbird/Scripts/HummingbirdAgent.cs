@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
 using Unity.VisualScripting;
 using UnityEngine;
 /// <summary>
@@ -97,7 +98,53 @@ public class HummingbirdAgent : Agent
         // Recalculate nearest flower now that the agent has moved
         UpdateNearestFlower();
     }
+    
+    /// <summary>
+    /// Called when an action is received from the player input or the neural network
+    /// ActionBuffers contains two Accessors: ContiuousActions and DiscreteAction
+    ///     - ContiuousActions store a (ActionSegment) list of float 
+    ///         - actions.ContiousActions[i] represents:
+    ///         - Index[0]: move vector x (-1 = left, 1 = right)
+    ///         - Index[1]: move vector y (-1 = down, 1 = up)
+    ///         - Index[2]: move vector z (-1 = backward, 1 = forward)
+    ///         - Index[3]: pitch angle (-1 = pitch down, 1 = pitch up)
+    ///         - Index[4]: yaw angle (-1 = turn left, 1 = turn right)
+    ///         
+    ///     - We will not be using DiscreteActions here
+    /// </summary>
+    /// <param name="actions">The actions to take</param>
+    public override void OnActionReceived(ActionBuffers actions)
+    {
+        // Don't take actions if frozne
+        if (isFrozen) return;
 
+        // Calculate Movement Vector
+        Vector3 move = new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]);
+
+        // Add force in the direction of the move vector
+        rigidbody.AddForce(move * moveForce);
+
+        // Get the current rotation
+        Vector3 rotationVector = transform.rotation.eulerAngles;
+
+        // Calculate the pitch and yaw rotations
+        float pitchChange = actions.ContinuousActions[3];
+        float yawChange = actions.ContinuousActions[4];
+
+        // calculate smooth rotation
+        smoothPitchChange = Mathf.MoveTowards(smoothPitchChange, pitchChange, 2f * Time.fixedDeltaTime);
+        smoothYawChange = Mathf.MoveTowards(smoothYawChange, yawChange, 2f * Time.fixedDeltaTime);
+
+        // Update Rotations
+        float pitch = rotationVector.x + smoothPitchChange * pitchSpeed * Time.fixedDeltaTime;
+        float yaw = rotationVector.y + smoothYawChange * yawSpeed * Time.fixedDeltaTime;
+
+        //Clamp pitch to avoid flipping upside down 
+        if (pitch > 180) pitch -= 360;
+        pitch = Mathf.Clamp(pitch, -MaxPitchAngle, MaxPitchAngle);
+
+        transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+    }
     /// <summary>
     /// Move the agent to a safe random position (i.e. not colliding with anything)
     /// If in front of flower, also point beak at the direction of flower
