@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Threading;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Sensors;
 using Unity.VisualScripting;
 using UnityEngine;
 /// <summary>
@@ -145,6 +147,42 @@ public class HummingbirdAgent : Agent
 
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
     }
+
+    /// <summary>
+    /// Collect vector observations from the environment
+    /// </summary>
+    /// <param name="sensor">The vector sensor</param>
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        // If the nearestFlower is not defined yet, pass in empty observations and return
+        if (nearestFlower == null)
+        {
+            sensor.AddObservation(new float[10]);
+            return;
+        }
+        // Observe the agent's local rotation (4 observations)
+        sensor.AddObservation(transform.localRotation.normalized);
+
+        // Get a vector from the beak tip to the nearest flower
+        Vector3 toFlower = nearestFlower.FlowerCenterPosition - beakTip.position;
+
+        // Observe the normalized vector pointing to the nearest flower (3 observations)
+        sensor.AddObservation(toFlower.normalized);
+
+        // Observe the dot product that indicate whether the beaktip is in front of the flower (1 observation)
+        // (+1 means it's directly in front of the flower, -1 means it's directly behind the flower)
+        sensor.AddObservation(Vector3.Dot(toFlower.normalized, -nearestFlower.FlowerUpVectar.normalized));
+
+        // Observe the dot product that indicate whether the beak is facing the flower (1 observation)
+        // (+1 means it's directly facing toward the flower, -1 means it's directly facing away from the flower)
+        sensor.AddObservation(Vector3.Dot(beakTip.forward.normalized, -nearestFlower.FlowerUpVectar.normalized));
+
+        // Observe the relative distance from beaktip to the flower respective to the AreaDiameter (1 observation)
+        sensor.AddObservation(toFlower.magnitude/FlowerArea.AreaDiameter);
+
+        // 10 total observations
+    }
+
     /// <summary>
     /// Move the agent to a safe random position (i.e. not colliding with anything)
     /// If in front of flower, also point beak at the direction of flower
