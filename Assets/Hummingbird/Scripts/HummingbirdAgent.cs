@@ -408,4 +408,25 @@ public class HummingbirdAgent : Agent
             AddReward(-.5f);
         }
     }
+    
+    /// <summary>
+    /// Update every frame
+    /// </summary>
+    private void Update()
+    {
+        // Draw a line from the agent to the nearest flower
+        if (nearestFlower != null) 
+            Debug.DrawLine(transform.position, nearestFlower.FlowerCenterPosition, Color.green);
+
+    }
+    
+    /// <summary>
+    /// Update every .02 second
+    /// </summary>
+    private void FixedUpdate()
+    {
+        // Avoids scneraio where nearestFlower pollen is stolen by opponent and not updated
+        if(nearestFlower != null && !nearestFlower.HasNectar)
+            UpdateNearestFlower();
+    }
 }
