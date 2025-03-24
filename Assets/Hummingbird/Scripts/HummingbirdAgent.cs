@@ -6,6 +6,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 /// <summary>
 /// A Hummingbird Machine Learning Agent
 /// </summary>
@@ -183,6 +184,59 @@ public class HummingbirdAgent : Agent
         // 10 total observations
     }
 
+    /// <summary>
+    /// When Behavior Type is set to "Heuristic Only" on the agent's Behavior Parameters,
+    /// this function will be called. Its return value will be fed into
+    /// <see cref="OnActionReceived"> instead of using the neural network
+    /// </summary>
+    /// <param name="actionsOut">An output action array</param>
+    public override void Heuristic(in ActionBuffers actionsOut)
+    {
+        // Create placeholder for movement/turning
+        Vector3 forward = Vector3.zero;
+        Vector3 right = Vector3.zero;
+        Vector3 up = Vector3.zero;
+        float pitch = 0f;
+        float yaw = 0f;
+
+        // Convnert all keyboard input into movement and turning
+        // All value between -1 and 1
+
+        // Forward/Backward
+        if (Input.GetKey(KeyCode.W)) forward = transform.forward;
+        else if (Input.GetKey(KeyCode.S)) forward = -transform.forward;
+
+        // Left/Right
+        if (Input.GetKey(KeyCode.A)) right = transform.right;
+        else if (Input.GetKey(KeyCode.S)) right = -transform.up;
+
+        // Up/Down
+        if (Input.GetKey(KeyCode.W)) up = transform.up;
+        else if (Input.GetKey(KeyCode.S)) up = -transform.up;
+
+        // Mouse pitch and yaw
+        pitch = Input.GetAxis("Mouse X");
+        yaw = Input.GetAxis("Mouse Y");
+
+        // Combine movement vector and normalize
+        Vector3 combined = (forward + right + up).normalized;
+
+        // Add all actions to actionOut
+        var continuousActionsOut = actionsOut.ContinuousActions;
+        continuousActionsOut[0] = combined.x;
+        continuousActionsOut[1] = combined.y;
+        continuousActionsOut[2] = combined.z;
+        continuousActionsOut[3] = pitch;
+        continuousActionsOut[4] = yaw;
+        // TODO: Check this actually work
+    }
+    /// <summary>
+    /// Freeze the agent and prevent it from doing anything
+    /// </summary>
+    public void FreezeAgent() 
+    {
+        Debug.Assert(!trainingMode, "Freeze/Unfreeze not supported in training mode");
+    }
     /// <summary>
     /// Move the agent to a safe random position (i.e. not colliding with anything)
     /// If in front of flower, also point beak at the direction of flower
