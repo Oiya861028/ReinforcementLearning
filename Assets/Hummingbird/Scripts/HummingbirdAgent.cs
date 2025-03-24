@@ -236,6 +236,17 @@ public class HummingbirdAgent : Agent
     public void FreezeAgent() 
     {
         Debug.Assert(!trainingMode, "Freeze/Unfreeze not supported in training mode");
+        isFrozen = true;
+        rigidbody.Sleep();
+    }
+    /// <summary>
+    /// Unfreeze the agent and resume action
+    /// </summary>
+    public void UnfreezeAgent() 
+    {
+        Debug.Assert(!trainingMode, "Freeze/Unfreeze not supported in training mode");
+        isFrozen = false;
+        rigidbody.WakeUp();
     }
     /// <summary>
     /// Move the agent to a safe random position (i.e. not colliding with anything)
