@@ -3,6 +3,7 @@ using Unity.MLAgents;
 using TMPro;
 using System.Linq;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 public class PenguinArea: MonoBehaviour
 {
     [Tooltip("The agent inside the area")]
@@ -148,9 +149,10 @@ public class PenguinArea: MonoBehaviour
             Vector3 position = ChooseRandomPosition(Vector3.zero, 100f, 260f, 2f, 13f) + Vector3.up * 0.5f; 
             Quaternion rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
 
-            // Spawn the fish, make it a child of the area, and set its swim speed
-            fishList[i] = Instantiate(fishPrefab, position, rotation);
-            fishList[i].transform.SetParent(transform);
+            // Spawn the fish, make it a child of the area, and keep track of the fish
+            fishList[i] = Instantiate<GameObject>(fishPrefab.GameObject(), position, rotation, transform.parent);
+
+            // Set the fish swim speed
             fishList[i].GetComponent<Fish>().fishSpeed = fishSpeed;
         }
     }
