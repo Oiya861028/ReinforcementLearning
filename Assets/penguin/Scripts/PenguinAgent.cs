@@ -2,90 +2,97 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-using System;
+
 public class PenguinAgent : Agent
 {
     [Tooltip("How fast the agent moves forward")]
-    public float speed = 5f;
+    public float moveSpeed = 5f;
 
     [Tooltip("How fast the agent turns")]
-    public float turnSpeed = 100f;
+    public float turnSpeed = 180f;
 
-    [Tooltip("The prefab of the red heart that appears when baby is fed")]
-    public GameObject redHeartPrefab;
+    [Tooltip("Prefab of the heart that appears when the baby is fed")]
+    public GameObject heartPrefab;
 
-    [Tooltip("The prefab of the regurgitated fish when the baby is fed")]
+    [Tooltip("Prefab of the regurgitated fish that appears when the baby is fed")]
     public GameObject regurgitatedFishPrefab;
 
-    // The area the agent is in
     private PenguinArea penguinArea;
-
-    // The agent's regidbody
     new private Rigidbody rigidbody;
-
-    // The baby penguin prefab
     private GameObject baby;
-
-    // Track if penguin's stomach is full
-    private bool isFull;
+    private bool isFull; // If true, penguin has a full stomach
 
     /// <summary>
-    /// Call when the agent is waken
+    /// Initial setup, called when the agent is enabled
     /// </summary>
     public override void Initialize()
     {
         base.Initialize();
         penguinArea = GetComponentInParent<PenguinArea>();
+        baby = penguinArea.penguinBaby;
         rigidbody = GetComponent<Rigidbody>();
-        baby = penguinArea.babyPenguin;
     }
+
     /// <summary>
-    /// Call when an action is received
-    /// ActionBuffers parameters:
-    ///     int[] discreteActions:
-    ///         Index[0]: (0 = do nothing, 1 = move forward)
-    ///         Index[1]: (0 = do nothing, 1 = turn left, 2 = turn right)
-    /// Rewards:
-    ///     -1/MaxStep for each step taken to encourage movement in agent
+    /// Perform actions based on a vector of numbers
     /// </summary>
-    /// <param name="actions">The action received</param>
-    public override void OnActionReceived(ActionBuffers actions)
+    /// <param name="actionBuffers">The struct of actions to take</param>
+    public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         // Convert the first action to forward movement
-        float forwardAmount = actions.DiscreteActions[0];
+        float forwardAmount = actionBuffers.DiscreteActions[0];
 
         // Convert the second action to turning left or right
-        float turnAmount = actions.DiscreteActions[1];
+        float turnAmount = 0f;
+        if (actionBuffers.DiscreteActions[1] == 1f)
+        {
+            turnAmount = -1f;
+        }
+        else if (actionBuffers.DiscreteActions[1] == 2f)
+        {
+            turnAmount = 1f;
+        }
 
-        // Apply forces to agent
-        rigidbody.AddForce(transform.forward * speed * forwardAmount * Time.deltaTime);
-        rigidbody.AddTorque(transform.up * turnAmount * turnSpeed * Time.deltaTime);
+        // Apply movement
+        rigidbody.MovePosition(transform.position + transform.forward * forwardAmount * moveSpeed * Time.fixedDeltaTime);
+        transform.Rotate(transform.up * turnAmount * turnSpeed * Time.fixedDeltaTime);
 
-        // Apply penalty for step
+        // Apply a tiny negative reward every step to encourage action
         if (MaxStep > 0) AddReward(-1f / MaxStep);
     }
 
-
     /// <summary>
-    /// Call when the agent is heuristically controlled
+    /// Read inputs from the keyboard and convert them to a list of actions.
+    /// This is called only when the player wants to control the agent and has set
+    /// Behavior Type to "Heuristic Only" in the Behavior Parameters inspector.
     /// </summary>
-    /// <param name="actionsOut">A vector action array that will be passed to <see cref="OnActionReceived"/> </param>
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        var discreteActionsOut = actionsOut.DiscreteActions;
+        int forwardAction = 0;
+        int turnAction = 0;
+        if (Input.GetKey(KeyCode.W))
+        {
+            // move forward
+            forwardAction = 1;
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            // turn left
+            turnAction = 1;
+        }
+        else if (Input.GetKey(KeyCode.D))
+        {
+            // turn right
+            turnAction = 2;
+        }
 
-        // Detect forward movement
-        if (Input.GetKey(KeyCode.W)) discreteActionsOut[0] = 1;
-        else discreteActionsOut[0] = 0;
-
-        // Detect rotation
-        if (Input.GetKey(KeyCode.A)) discreteActionsOut[1] = 1;
-        else if (Input.GetKey(KeyCode.D)) discreteActionsOut[1] = 2;
-        else discreteActionsOut[1] = 0;
+        // Put the actions into the array
+        actionsOut.DiscreteActions.Array[0] = forwardAction;
+        actionsOut.DiscreteActions.Array[1] = turnAction;
     }
 
     /// <summary>
-    /// When a new episode starts, reset area and agent
+    /// When a new episode begins, reset the agent and area
     /// </summary>
     public override void OnEpisodeBegin()
     {
@@ -94,39 +101,38 @@ public class PenguinAgent : Agent
     }
 
     /// <summary>
-    /// Collect all non-raycast observations
+    /// Collect all non-Raycast observations
     /// </summary>
-    /// <param name="sensor">The vector sensor to add observations</param>
+    /// <param name="sensor">The vector sensor to add observations to</param>
     public override void CollectObservations(VectorSensor sensor)
     {
-        // Whether the agent has eaten a fish (1 observation)
+        // Whether the penguin has eaten a fish (1 float = 1 value)
         sensor.AddObservation(isFull);
 
-        // The distance to the baby penguin (1 observation)
-        sensor.AddObservation(Vector3.Distance(transform.position, baby.transform.position));
+        // Distance to the baby (1 float = 1 value)
+        sensor.AddObservation(Vector3.Distance(baby.transform.position, transform.position));
 
-        // The direction to the baby (3 observation)
-        sensor.AddObservation(Vector3.Normalize(baby.transform.position - transform.position));
+        // Direction to baby (1 Vector3 = 3 values)
+        sensor.AddObservation((baby.transform.position - transform.position).normalized);
 
-        // The direction the penguin is facing (3 observation)
+        // Direction penguin is facing (1 Vector3 = 3 values)
         sensor.AddObservation(transform.forward);
 
-        // Total observations = 1 + 1 + 3 + 3 = 8
+        // 1 + 1 + 3 + 3 = 8 total values
     }
 
     /// <summary>
-    /// Call when the agent collide with something
+    /// When the agent collides with something, take action
     /// </summary>
-    /// <param name="other">The collider of the other object</param>
-    private void OnTriggerEnter(Collider other)
+    /// <param name="collision">The collision info</param>
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other.CompareTag("fish")) 
+        if (collision.transform.CompareTag("fish"))
         {
             // Try to eat the fish
-            EatFish(other.gameObject);
+            EatFish(collision.gameObject);
         }
-
-        if (other.CompareTag("baby"))
+        else if (collision.transform.CompareTag("baby"))
         {
             // Try to feed the baby
             RegurgitateFish();
@@ -134,41 +140,44 @@ public class PenguinAgent : Agent
     }
 
     /// <summary>
-    /// Attempt to eat the fish if the penguin is not already full
+    /// Check if agent is full, if not, eat the fish and get a reward
     /// </summary>
-    /// <param name="gameObject">The fish to eat</param>
-    private void EatFish(GameObject gameObject)
+    /// <param name="fishObject">The fish to eat</param>
+    private void EatFish(GameObject fishObject)
     {
-        // Is the penguin already full
-        if (isFull) return;
-
+        if (isFull) return; // Can't eat another fish while full
         isFull = true;
 
-        // Destroy the fish
-        penguinArea.RemoveSpecificFish(gameObject);
+        penguinArea.RemoveSpecificFish(fishObject);
 
         AddReward(1f);
     }
 
     /// <summary>
-    /// Attempt to regurgitate the fish to feed the baby
+    /// Check if agent is full, if yes, feed the baby
     /// </summary>
     private void RegurgitateFish()
     {
-        // Is the penguin's stomach empty
-        if (!isFull) return;
+        if (!isFull) return; // Nothing to regurgitate
         isFull = false;
-        // Regurgitate the fish
-        GameObject regurgitatedFish = Instantiate(regurgitatedFishPrefab, transform.position, Quaternion.identity, transform.parent);
+
+        // Spawn regurgitated fish
+        GameObject regurgitatedFish = Instantiate<GameObject>(regurgitatedFishPrefab);
+        regurgitatedFish.transform.parent = transform.parent;
+        regurgitatedFish.transform.position = baby.transform.position;
         Destroy(regurgitatedFish, 4f);
 
-        // Spawn the heart to show baby penguin is happy
-        GameObject heart = Instantiate(redHeartPrefab, baby.transform.position + Vector3.up, Quaternion.identity, transform.parent);
+        // Spawn heart
+        GameObject heart = Instantiate<GameObject>(heartPrefab);
+        heart.transform.parent = transform.parent;
+        heart.transform.position = baby.transform.position + Vector3.up;
         Destroy(heart, 4f);
 
         AddReward(1f);
 
-        if(penguinArea.FishRemaining <= 0) EndEpisode();
+        if (penguinArea.FishRemaining <= 0)
+        {
+            EndEpisode();
+        }
     }
 }
-

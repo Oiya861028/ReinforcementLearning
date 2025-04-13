@@ -1,45 +1,31 @@
-using UnityEngine;
-using Unity.MLAgents;
-using TMPro;
-using System.Linq;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-public class PenguinArea: MonoBehaviour
+using UnityEngine;
+using TMPro;
+
+public class PenguinArea : MonoBehaviour
 {
     [Tooltip("The agent inside the area")]
     public PenguinAgent penguinAgent;
 
     [Tooltip("The baby penguin inside the area")]
-    public GameObject babyPenguin;
+    public GameObject penguinBaby;
 
-    [Tooltip("The TextmeshPro that shows the cumulative reward of the agent")]
-    public TextMesh cumulativeRewardText;
+    [Tooltip("The TextMeshPro text that shows the cumulative reward of the agent")]
+    public TextMeshPro cumulativeRewardText;
 
     [Tooltip("Prefab of a live fish")]
     public Fish fishPrefab;
 
-    /// <summary>
-    /// The number of fish currently in the area
-    /// </summary>
-    public int FishRemaining
-    {
-        get 
-        { 
-            return fishList.Count; 
-        }
-    }
-
-    // A list of all the fish in the area
     private List<GameObject> fishList;
 
     /// <summary>
-    /// Resets the area, including fish and penguin placesment
+    /// Reset the area, including fish and penguin placement
     /// </summary>
     public void ResetArea()
     {
         RemoveAllFish();
-        placePenguin();
-        placeBaby();
+        PlacePenguin();
+        PlaceBaby();
         SpawnFish(4, .5f);
     }
 
@@ -54,24 +40,26 @@ public class PenguinArea: MonoBehaviour
     }
 
     /// <summary>
+    /// The number of fish remaining
+    /// </summary>
+    public int FishRemaining
+    {
+        get { return fishList.Count; }
+    }
+
+    /// <summary>
     /// Choose a random position on the X-Z plane within a partial donut shape
     /// </summary>
     /// <param name="center">The center of the donut</param>
     /// <param name="minAngle">Minimum angle of the wedge</param>
     /// <param name="maxAngle">Maximum angle of the wedge</param>
-    /// <param name="minRadius">Minimum radius of the wedge</param>
-    /// <param name="maxRadius">Maximum radius of the wedge</param>
-    /// <returns>Random Vector3 position within the X-Z plane specified</returns>
-    public static Vector3 ChooseRandomPosition(Vector3 center, float minAngle, float maxAngle, float minRadius, float maxRadius) 
+    /// <param name="minRadius">Minimum distance from the center</param>
+    /// <param name="maxRadius">Maximum distance from the center</param>
+    /// <returns>A position falling within the specified region</returns>
+    public static Vector3 ChooseRandomPosition(Vector3 center, float minAngle, float maxAngle, float minRadius, float maxRadius)
     {
-        float angle = minAngle;
         float radius = minRadius;
-
-        if (maxAngle > minAngle)
-        {
-            // Pick a random angle
-            angle = UnityEngine.Random.Range(minAngle, maxAngle);
-        }
+        float angle = minAngle;
 
         if (maxRadius > minRadius)
         {
@@ -79,86 +67,86 @@ public class PenguinArea: MonoBehaviour
             radius = UnityEngine.Random.Range(minRadius, maxRadius);
         }
 
-        // Center radius + forwardVector rotated around the Y axis by "angle" degrees, multiplies by "radius"
+        if (maxAngle > minAngle)
+        {
+            // Pick a random angle
+            angle = UnityEngine.Random.Range(minAngle, maxAngle);
+        }
+
+        // Center position + forward vector rotated around the Y axis by "angle" degrees, multiplies by "radius"
         return center + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius;
     }
 
+    /// <summary>
+    /// Remove all fish from the area
+    /// </summary>
     private void RemoveAllFish()
     {
         if (fishList != null)
         {
-            for (int i = 0; i < fishList.Count; i++) 
+            for (int i = 0; i < fishList.Count; i++)
             {
                 if (fishList[i] != null)
                 {
                     Destroy(fishList[i]);
                 }
             }
-            fishList.Clear();
         }
+
         fishList = new List<GameObject>();
     }
 
     /// <summary>
-    /// placess the penguin in the area randomly
+    /// Place the penguin in the area
     /// </summary>
-    private void placePenguin()
+    private void PlacePenguin()
     {
-        // Resets the penguin's linear and angular velocity
         Rigidbody rigidbody = penguinAgent.GetComponent<Rigidbody>();
         rigidbody.linearVelocity = Vector3.zero;
         rigidbody.angularVelocity = Vector3.zero;
-        
-        // Randomly places the penguin in the area
-        Vector3 position = ChooseRandomPosition(Vector3.zero, 0f, 360f, 0f, 9f) + Vector3.up * 0.5f; // + Vector3.up * 0.5f to make sure it doesn't clip through ground
-        penguinAgent.transform.position = position;
-
-        // Randomly rotate the penguin
-        Quaternion rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
-        penguinAgent.transform.rotation = rotation;
+        penguinAgent.transform.position = ChooseRandomPosition(transform.position, 0f, 360f, 0f, 9f) + Vector3.up * .5f;
+        penguinAgent.transform.rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
     }
 
     /// <summary>
-    /// places the baby penguin in the area, making sure it's on land
+    /// Place the baby in the area
     /// </summary>
-    private void placeBaby()
+    private void PlaceBaby()
     {
-        // Resets the linear and angular velocity
-        Rigidbody rigidbody = babyPenguin.GetComponent<Rigidbody>();
+        Rigidbody rigidbody = penguinBaby.GetComponent<Rigidbody>();
         rigidbody.linearVelocity = Vector3.zero;
         rigidbody.angularVelocity = Vector3.zero;
-        
-        // Randomly places the baby on land
-        Vector3 position = ChooseRandomPosition(Vector3.zero, -45f, 45f, 0f, 9f) + Vector3.up * 0.5f; // + Vector3.up * 0.5f to make sure it doesn't clip through ground
-        babyPenguin.transform.position = position;
-
-        // Set rotation
-        babyPenguin.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+        penguinBaby.transform.position = ChooseRandomPosition(transform.position, -45f, 45f, 4f, 9f) + Vector3.up * .5f;
+        penguinBaby.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
     }
 
     /// <summary>
-    /// Spawn some fish in the area and set their swim speed
+    /// Spawn some number of fish in the area and set their swim speed
     /// </summary>
-    /// <param name="count">Amount of fish to spawn</param>
+    /// <param name="count">The number to spawn</param>
     /// <param name="fishSpeed">The swim speed</param>
     private void SpawnFish(int count, float fishSpeed)
     {
-        for (int i=0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
-            // Set random position and rotation within the area
-            Vector3 position = ChooseRandomPosition(Vector3.zero, 100f, 260f, 2f, 13f) + Vector3.up * 0.5f; 
-            Quaternion rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
+            // Spawn and place the fish
+            GameObject fishObject = Instantiate<GameObject>(fishPrefab.gameObject);
+            fishObject.transform.position = ChooseRandomPosition(transform.position, 100f, 260f, 2f, 13f) + Vector3.up * .5f;
+            fishObject.transform.rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
 
-            // Spawn the fish, make it a child of the area, and keep track of the fish
-            fishList[i] = Instantiate<GameObject>(fishPrefab.GameObject(), position, rotation, transform.parent);
+            // Set the fish's parent to this area's transform
+            fishObject.transform.SetParent(transform);
 
-            // Set the fish swim speed
-            fishList[i].GetComponent<Fish>().fishSpeed = fishSpeed;
+            // Keep track of the fish
+            fishList.Add(fishObject);
+
+            // Set the fish speed
+            fishObject.GetComponent<Fish>().fishSpeed = fishSpeed;
         }
     }
 
     /// <summary>
-    /// Call when the game start
+    /// Called when the game starts
     /// </summary>
     private void Start()
     {
@@ -166,11 +154,12 @@ public class PenguinArea: MonoBehaviour
     }
 
     /// <summary>
-    /// Call every frame
+    /// Called every frame
     /// </summary>
     private void Update()
     {
-        // Updates the cumulative reward text
+        // Update the cumulative reward text
         cumulativeRewardText.text = penguinAgent.GetCumulativeReward().ToString("0.00");
     }
+
 }
