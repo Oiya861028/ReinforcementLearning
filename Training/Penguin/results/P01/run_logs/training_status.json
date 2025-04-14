@@ -1,0 +1,56 @@
+{
+    "Penguin": {
+        "checkpoints": [
+            {
+                "steps": 16000,
+                "file_path": "results\\P01\\Penguin\\Penguin-16000.onnx",
+                "reward": -1.0000000521540642,
+                "creation_time": 1744560628.5437844,
+                "auxillary_file_paths": [
+                    "results\\P01\\Penguin\\Penguin-16000.pt"
+                ]
+            },
+            {
+                "steps": 499968,
+                "file_path": "results\\P01\\Penguin\\Penguin-499968.onnx",
+                "reward": null,
+                "creation_time": 1744561640.8809896,
+                "auxillary_file_paths": [
+                    "results\\P01\\Penguin\\Penguin-499968.pt"
+                ]
+            },
+            {
+                "steps": 999896,
+                "file_path": "results\\P01\\Penguin\\Penguin-999896.onnx",
+                "reward": -1.0000000521540642,
+                "creation_time": 1744583051.4520862,
+                "auxillary_file_paths": [
+                    "results\\P01\\Penguin\\Penguin-999896.pt"
+                ]
+            },
+            {
+                "steps": 1001024,
+                "file_path": "results\\P01\\Penguin\\Penguin-1001024.onnx",
+                "reward": null,
+                "creation_time": 1744583059.252459,
+                "auxillary_file_paths": [
+                    "results\\P01\\Penguin\\Penguin-1001024.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1001024,
+            "file_path": "results\\P01\\Penguin.onnx",
+            "reward": null,
+            "creation_time": 1744583059.252459,
+            "auxillary_file_paths": [
+                "results\\P01\\Penguin\\Penguin-1001024.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

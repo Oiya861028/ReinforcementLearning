@@ -130,6 +130,7 @@ public class PenguinAgent : Agent
         if (collision.transform.CompareTag("fish"))
         {
             // Try to eat the fish
+            Debug.Log("Collided with fish");
             EatFish(collision.gameObject);
         }
         else if (collision.transform.CompareTag("baby"))
